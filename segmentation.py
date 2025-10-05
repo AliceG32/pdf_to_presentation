@@ -1,9 +1,55 @@
 import cv2
+import fitz
 from matplotlib import pyplot as plt
 import os
 
 
-def segment_text_blocks(image_path):
+def extract_text_from_pdf_coordinates(pdf_path, coordinates_list, page_num=0, output_dir="extracted_texts"):
+    print(page_num)
+    """
+    Извлекает текст из конкретных областей PDF по координатам
+
+    Args:
+        pdf_path: путь к PDF файлу
+        coordinates_list: список кортежей (x1, y1, x2, y2) или (x, y, w, h)
+        page_num: номер страницы (начинается с 0)
+    """
+
+    # Открываем PDF
+    doc = fitz.open(pdf_path)
+    page = doc[page_num-1]
+
+
+    extracted_texts = []
+
+    for i, coords in enumerate(coordinates_list):
+        # Преобразуем координаты в формат PyMuPDF
+        x, y, w, h = coords
+        rect = fitz.Rect(x, y, x + w, y + h)
+
+
+        # Извлекаем текст из области
+        text = page.get_text("text", clip=rect).strip()
+
+        filename = f"block_{i + 1:03d}_page_{page_num + 1}.txt"
+        filepath = os.path.join(output_dir, filename)
+
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(text)
+
+        extracted_texts.append({
+            'block_id': i + 1,
+            'coordinates': coords,
+            'text': text,
+            'rect': rect
+        })
+
+        print(f"Блок {i + 1}: {text}")
+
+    doc.close()
+    return extracted_texts
+
+def segment_text_blocks(image_path, page_num=0):
     img = cv2.imread(image_path)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -30,15 +76,19 @@ def segment_text_blocks(image_path):
 
         cv2.putText(result, f'{i + 1}', (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
+    print(text_blocks)
+    extract_text_from_pdf_coordinates(
+        "/home/alice/Документы/ml_project/data/fin_report_MTS_IFRS_Cons_200821.pdf", text_blocks, page_num)
+
     return result, text_blocks, img
 
 
-def extract_text_blocks_sorted(image_path, output_dir="text_blocks_sorted"):
+def extract_text_blocks_sorted(image_path, output_dir="text_blocks_sorted", page_num=0):
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    result_image, blocks, original_img = segment_text_blocks(image_path)
+    result_image, blocks, original_img = segment_text_blocks(image_path, page_num)
 
     extracted_blocks = []
 
@@ -55,13 +105,12 @@ def extract_text_blocks_sorted(image_path, output_dir="text_blocks_sorted"):
             'filename': block_filename,
             'image': block_roi
         })
-
         print(f"Блок {i + 1}: координаты ({x}, {y}, {w}, {h}), сохранен как {block_filename}")
 
     return result_image, extracted_blocks
 
-
-result_image, blocks_info = extract_text_blocks_sorted("test_images/page_5_dpi_100.png")
+num_page=6
+result_image, blocks_info = extract_text_blocks_sorted(f"test_images_2/page_{num_page}_dpi_100.png", page_num=num_page)
 
 plt.figure(figsize=(15, 10))
 plt.imshow(cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB))
