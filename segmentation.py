@@ -5,6 +5,12 @@ import os
 import numpy as np
 import pandas as pd
 from collections import Counter
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+file_path = os.getenv("FILE_PATH")
 
 
 def is_table_block(image_block, contour_coords, original_image=None, min_lines=3, line_density_threshold=0.1):
@@ -25,7 +31,7 @@ def is_table_block(image_block, contour_coords, original_image=None, min_lines=3
 
 
 def detect_horizontal_lines(image, min_line_length=30):
-    """Обнаруживает горизонтальные линии с сбалансированными параметрами"""
+    """Обнаруживает горизонтальные линии со сбалансированными параметрами"""
     height, width = image.shape[:2]
 
     # Адаптивные параметры
@@ -76,7 +82,7 @@ def detect_horizontal_lines(image, min_line_length=30):
 
 
 def detect_vertical_lines(image, min_line_length=20):
-    """Обнаруживает вертикальные линии с сбалансированными параметрами"""
+    """Обнаруживает вертикальные линии со сбалансированными параметрами"""
     height, width = image.shape[:2]
 
     adaptive_min_length = max(min_line_length, height * 0.2)  # снизили до 20%
@@ -124,7 +130,7 @@ def detect_vertical_lines(image, min_line_length=20):
 
 
 
-def extract_text_from_pdf_coordinates(pdf_path, coordinates_list, page_num=0, output_dir="extracted_texts"):
+def extract_text_from_pdf_coordinates(pdf_path, coordinates_list, page_num=0, output_dir="diploma_extracted_texts"):
     print(f"Обрабатывается страница: {page_num}")
 
     print(pdf_path)
@@ -210,7 +216,7 @@ def segment_text_blocks(image_path, page_num=0):
     print(f"Текстовых блоков: {len(regular_blocks)}")
 
     extract_text_from_pdf_coordinates(
-        "/home/alice/Документы/ml_project/data/курсовая.pdf",
+        file_path,
         text_blocks, page_num)
 
     return result, text_blocks, img, table_blocks
@@ -247,31 +253,35 @@ def extract_text_blocks_sorted(image_path, output_dir="diploma_text_blocks_sorte
 
     return result_image, extracted_blocks
 
-# Использование
-num_page = 68
-result_image, blocks_info = extract_text_blocks_sorted(f"diploma/page_{num_page}_dpi_100.png", page_num=num_page)
+doc = fitz.open(file_path)
+page_count = doc.page_count
 
-# Визуализация результатов
-plt.figure(figsize=(15, 10))
-plt.imshow(cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB))
+for i in range(1, page_count):
+    num_page = i
+    image_path = f"diploma/page_{num_page}_dpi_100.png"
+    result_image, blocks_info = extract_text_blocks_sorted(image_path, page_num=num_page)
 
-# Подсчет типов блоков
-table_count = sum(1 for block in blocks_info if block['type'] == 'table')
-text_count = sum(1 for block in blocks_info if block['type'] == 'text')
+    # Визуализация результатов
+    plt.figure(figsize=(15, 10))
+    plt.imshow(cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB))
 
-plt.title(f"Найдено блоков: {len(blocks_info)} (Таблиц: {table_count}, Текст: {text_count})")
-plt.axis('off')
-plt.tight_layout()
-plt.show()
+    # Подсчет типов блоков
+    table_count = sum(1 for block in blocks_info if block['type'] == 'table')
+    text_count = sum(1 for block in blocks_info if block['type'] == 'text')
 
-cv2.imwrite("segmented_result_sorted_with_tables.jpg", result_image)
+    plt.title(f"Найдено блоков: {len(blocks_info)} (Таблиц: {table_count}, Текст: {text_count})")
+    plt.axis('off')
+    plt.tight_layout()
+    #plt.show()
 
-print("\n" + "=" * 50)
-print("ОБНАРУЖЕННЫЕ ТАБЛИЦЫ:")
-print("=" * 50)
-for block in blocks_info:
-    if block['type'] == 'table':
-        print(f"Блок {block['id']}: confidence={block['confidence']}/5")
-        print(f"Координаты: {block['coordinates']}")
-        print(f"Файл: {block['filename']}")
-        print("-" * 30)
+    cv2.imwrite("segmented_result_sorted_with_tables.jpg", result_image)
+
+    print("\n" + "=" * 50)
+    print("ОБНАРУЖЕННЫЕ ТАБЛИЦЫ:")
+    print("=" * 50)
+    for block in blocks_info:
+        if block['type'] == 'table':
+            print(f"Блок {block['id']}: confidence={block['confidence']}/5")
+            print(f"Координаты: {block['coordinates']}")
+            print(f"Файл: {block['filename']}")
+            print("-" * 30)
