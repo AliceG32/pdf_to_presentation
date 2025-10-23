@@ -13,20 +13,19 @@ def list_files_os(path, output_dir="diploma_extracted_text_tesseract"):
     for file_name in os.listdir(path):
         file_path = os.path.join(path, file_name)
         print(file_path)
-        if "table" not in file_name:
-            if os.path.isfile(file_path):  # Проверяем, что это файл, а не папка
-                img = Image.open(file_path)
+        if os.path.isfile(file_path):  # Проверяем, что это файл, а не папка
+            img = Image.open(file_path)
 
-                text = pytesseract.image_to_string(img, lang='rus+eng')
+            text = pytesseract.image_to_string(img, lang='rus+eng')
 
-                txt_filename = f'{str(file_name).split(".")[0]}.txt'
-                output_txt_path = os.path.join(output_dir, txt_filename)
-                # Сохраняем в файл
-                with open(output_txt_path, 'w', encoding='utf-8') as f:
-                    f.write(text)
+            txt_filename = f'{str(file_name).split(".")[0]}.txt'
+            output_txt_path = os.path.join(output_dir, txt_filename)
+            # Сохраняем в файл
+            with open(output_txt_path, 'w', encoding='utf-8') as f:
+                f.write(text)
 
-                print(f"Текст успешно сохранен в: {output_txt_path}")
-        else:
+            print(f"Текст успешно сохранен в: {output_txt_path}")
+        if "table" in file_name:
             output_png_path = os.path.join(output_dir, file_name)
             shutil.copy2(file_path, output_png_path)
             print(f"PNG файл сохранен: {output_png_path}")
