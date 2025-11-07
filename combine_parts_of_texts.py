@@ -33,6 +33,31 @@ def combine_texts(path, list_of_file_names, output_dir="diploma_recognized_pages
                 text += content
 
         else:
+            if file_path.split(".")[-1] != "png":
+                if os.path.isfile(file_path):
+                    with open(file_path, 'r', encoding='utf-8') as file:
+                        content = file.read()
+
+                    text += "\n Таблица \n"
+                    text += content
+                    text += "\n Конец таблицы \n"
+            '''else:
+                destination_folder = output_dir
+                file_extension = file_name.split(".")[-1]
+                new_filename = f'page_{page_number}_block_{block_number:03d}_table.{file_extension}'
+
+                # Создаем папку назначения, если её нет
+                os.makedirs(destination_folder, exist_ok=True)
+
+                # Полный путь к новому файлу
+                destination_path = os.path.join(destination_folder, new_filename)
+
+                # Копируем файл
+                shutil.copy2(file_path, destination_path)
+
+                print(f"PNG файл сохранен: {destination_path}")
+            
+            
             if text and text.strip():
                 txt_filename = f'page_{page_number}_block_{block_number:03d}_text.txt'
                 output_txt_path = os.path.join(output_dir, txt_filename)
@@ -57,10 +82,10 @@ def combine_texts(path, list_of_file_names, output_dir="diploma_recognized_pages
             # Копируем файл
             shutil.copy2(file_path, destination_path)
 
-            print(f"PNG файл сохранен: {destination_path}")
+            print(f"PNG файл сохранен: {destination_path}")'''
 
-            block_number += 1
-            text = ""
+            #block_number += 1
+            #text = ""
 
 
 folder_with_pictures = "diploma_extracted_text_tesseract"
