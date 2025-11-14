@@ -5,7 +5,7 @@ import pytesseract
 from PIL import Image
 
 
-def list_files_os(path, output_dir="diploma_extracted_text_tesseract"):
+def list_files_os(path, output_dir="diploma_extracted_text_tesseract3"):
     """Проходит по всем файлам в папке используя os.listdir()"""
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -30,7 +30,7 @@ def list_files_os(path, output_dir="diploma_extracted_text_tesseract"):
             shutil.copy2(file_path, output_png_path)
             print(f"PNG файл сохранен: {output_png_path}")
 
-folder_with_pictures = "diploma_text_blocks_sorted_2"
+folder_with_pictures = "diploma_text_blocks_sorted_3"
 list_files_os(folder_with_pictures)
 
 
