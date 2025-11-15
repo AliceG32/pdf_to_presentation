@@ -3,6 +3,11 @@ import faiss
 from sentence_transformers import SentenceTransformer
 import os
 import re
+import json
+
+file_with_chunks = "chunks_dictionary.json"
+file_with_presentation_points = "diploma_plan_presentation_chunks"
+output_folder_for_close_chunks = "search_results"
 
 
 def sort_key(filename):
@@ -11,6 +16,36 @@ def sort_key(filename):
         return (int(numbers[0][0]), int(numbers[0][1]))
     return (0, 0)
 
+def merge_texts_to_chunks_from_json(file_path):
+    chunks = []
+    chunk_files = []
+
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            json_data = json.load(f)
+    except FileNotFoundError:
+        print(f"Файл '{file_path}' не найден!")
+        return chunks, chunk_files
+    except json.JSONDecodeError:
+        print(f"Ошибка декодирования JSON в файле '{file_path}'!")
+        return chunks, chunk_files
+
+    # Далее ваш существующий код обработки
+    if not json_data or not isinstance(json_data, dict):
+        print("Некорректные данные JSON!")
+        return chunks, chunk_files
+
+    for page_num, page_data in json_data.items():
+        if not isinstance(page_data, dict):
+            continue
+
+        for chunk_name, chunk_content in page_data.items():
+            if chunk_content and str(chunk_content).strip():
+                chunks.append(str(chunk_content).strip())
+                chunk_files.append(f"{chunk_name}")
+
+    print(f"Обработано {len(chunks)} текстовых фрагментов")
+    return chunks, chunk_files
 
 def merge_texts_to_chunks(input_folder):
     chunks = []  # Список для хранения текстовых фрагментов
@@ -87,7 +122,10 @@ def save_top_results(results, indices, chunk_files, page_num, output_folder="sea
 
 
 # Загружаем чанки и сохраняем имена файлов
-chunks, chunk_files = merge_texts_to_chunks("diploma_chunks")
+if "json" in file_with_chunks:
+    chunks, chunk_files = merge_texts_to_chunks_from_json(file_with_chunks)
+else:
+    chunks, chunk_files = merge_texts_to_chunks(file_with_chunks)
 
 model = SentenceTransformer("intfloat/multilingual-e5-base")
 embs = model.encode(chunks, normalize_embeddings=True).astype("float32")
@@ -108,12 +146,11 @@ def faiss_top_n(query: str, n: int = 3):
     return out, indices_list
 
 
-path = "diploma_plan_presentation_chunks"
 # Выполняем поиск
-for file_name in os.listdir(path):
+for file_name in os.listdir(file_with_presentation_points):
     print("-"*50)
     page_num = file_name.split(".")[0].split("_")[-1]
-    file_path = os.path.join(path, file_name)
+    file_path = os.path.join(file_with_presentation_points, file_name)
     with open(file_path, 'r', encoding='utf-8') as infile:
         content = infile.read().strip()
         query = content
@@ -125,4 +162,4 @@ for file_name in os.listdir(path):
             print(f"{i + 1}. Схожесть: {score:.3f} | Источник: {original_file}")
             print(f"   Текст: {text}...")
             print()
-        saved_files = save_top_results(results, indices, chunk_files, page_num)
+        saved_files = save_top_results(results, indices, chunk_files, page_num, output_folder_for_close_chunks)
